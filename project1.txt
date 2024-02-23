@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local File Search Engine with Trie</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #fileInput {
+            margin-bottom: 10px;
+        }
+
+        #searchInput {
+            margin-bottom: 10px;
+        }
+
+        #searchResults {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .resultItem {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Local File Search Engine with Trie</h1>
+    
+    <input type="file" id="fileInput" webkitdirectory directory multiple />
+    
+    <input type="text" id="searchInput" placeholder="Search for files" />
+    
+    <ul id="searchResults"></ul>
+
+    <script>
+        class TrieNode {
+            constructor() {
+                this.children = {};
+                this.isEndOfWord = false;
+                this.files = new Set();
+            }
+        }
+
+        class Trie {
+            constructor() {
+                this.root = new TrieNode();
+            }
+
+            insert(word, file) {
+                let node = this.root;
+
+                for (const char of word) {
+                    if (!node.children[char]) {
+                        node.children[char] = new TrieNode();
+                    }
+                    node = node.children[char];
+                    node.files.add(file);
+                }
+
+                node.isEndOfWord = true;
+            }
+
+            search(prefix) {
+                let node = this.root;
+
+                for (const char of prefix) {
+                    if (!node.children[char]) {
+                        return new Set();
+                    }
+                    node = node.children[char];
+                }
+
+                return node.files;
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+        const trie = new Trie();
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+
+            Array.from(files).forEach(file => {
+                const fileName = file.webkitRelativePath.toLowerCase();
+                const fileWords = fileName.split('/');
+
+                fileWords.forEach((word, index) => {
+                    trie.insert(fileWords.slice(index).join('/'), fileName);
+                });
+            });
+
+            searchInput.addEventListener('input', function() {
+                const searchTerm = searchInput.value.toLowerCase();
+                searchResults.innerHTML = '';
+
+                const matchingFiles = Array.from(trie.search(searchTerm));
+
+                if (matchingFiles.length > 0) {
+                    matchingFiles.forEach(fileName => {
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('resultItem');
+                        listItem.textContent = fileName;
+                        searchResults.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'No matching files found.';
+                    searchResults.appendChild(listItem);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
